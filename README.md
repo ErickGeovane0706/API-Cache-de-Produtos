@@ -1,157 +1,120 @@
-API de Cache de Produtos com Memcached
+🛍️ API de Cache de Produtos com Memcached
+🔄 Demonstração prática de Cache-Aside com Spring Boot + Java 21
 
-Java 21 • Spring Boot 3 • Cache-Aside Pattern
+📌 README criado em colaboração com Erivan Barros
 
-Este projeto demonstra a integração do Memcached como camada de cache distribuído em uma aplicação desenvolvida com Java 21 e Spring Boot 3, aplicando o padrão arquitetural Cache-Aside para melhorar o desempenho em operações de leitura.
+🎯 Sobre o Projeto
 
-1. Objetivo
+Este projeto demonstra de forma simples e objetiva como implementar uma camada de cache distribuído com Memcached em uma aplicação Java 21 + Spring Boot 3.
 
-O propósito deste projeto é apresentar, de forma clara e funcional, como:
+A ideia é simular uma fonte de dados lenta (com uma latência proposital de 2 segundos) e mostrar como o cache reduz drasticamente o tempo de resposta após a primeira consulta.
 
-implementar uma camada de cache de alta performance;
+⚡ Como Funciona (Padrão Cache-Aside)
+🟥 Cache Miss (primeira consulta)
 
-reduzir a latência em consultas repetidas;
+O produto é buscado no Memcached → não encontrado
 
-integrar o cliente Spymemcached com o Spring Boot;
+A aplicação busca na fonte lenta (simulada)
 
-demonstrar o fluxo completo de cache miss e cache hit de forma didática.
+O resultado é salvo no cache
 
-A aplicação expõe um endpoint REST que busca informações de produtos. Caso o item não esteja em cache, uma fonte de dados lenta é simulada, permitindo observar os ganhos de desempenho obtidos com o uso do Memcached.
+A resposta volta para o cliente
 
-2. Tecnologias Utilizadas
+🟩 Cache Hit (consultas seguintes)
 
-Java 21
+O produto já está no cache
 
-Spring Boot 3+
+A resposta é retornada instantaneamente
 
-Memcached (servidor de cache)
+Nenhuma latência simulada é executada
 
-Spymemcached 2.12.3 (cliente Java)
+🧰 Tecnologias Utilizadas
+
+☕ Java 21
+
+🚀 Spring Boot 3+
+
+💾 Memcached (servidor de cache)
+
+🔌 Spymemcached 2.12.3 (cliente Java)
+
+🛠️ Maven
+
+🖥️ Pré-requisitos
+
+Certifique-se de ter instalado:
+
+JDK 21
 
 Maven
 
-3. Funcionamento do Sistema
-3.1 Cache Miss
+Memcached em execução na porta 11211
 
-Quando o produto solicitado não está presente no cache:
-
-O serviço consulta o Memcached.
-
-Como não há entrada correspondente, realiza a busca na "fonte lenta", simulada por um atraso de 2 segundos.
-
-O resultado é armazenado no cache com tempo de expiração de 600 segundos.
-
-A resposta é retornada ao cliente.
-
-3.2 Cache Hit
-
-Em chamadas subsequentes ao mesmo produto:
-
-O serviço encontra o item no Memcached.
-
-O valor é retornado imediatamente, sem latência perceptível.
-
-Esse comportamento permite comparar claramente o desempenho entre uma consulta fria (cache miss) e uma consulta quente (cache hit).
-
-4. Pré-requisitos
-
-Antes de executar a aplicação, é necessário:
-
-JDK 21 instalado
-
-Maven instalado
-
-Servidor Memcached em execução na porta padrão (11211)
-
-Iniciando o Memcached (Ubuntu)
+▶️ Iniciar Memcached (Ubuntu/Linux)
 sudo apt update
 sudo apt install memcached
 sudo systemctl start memcached
 sudo systemctl status memcached
 
-5. Como Executar o Projeto
+🚀 Executando o Projeto
+1. Clone o repositório
+git clone <url-do-seu-repo>
+cd nome-do-repo
 
-Compile e execute:
-
+2. Execute a aplicação
 ./mvnw spring-boot:run
 
 
 A API estará disponível em:
+👉 http://localhost:8080
 
-http://localhost:8080
+🧪 Testando o Cache
+Produto disponível para teste:
 
-6. Testando a API
+IDs: 101 e 102
 
-O projeto disponibiliza dois produtos para teste: 101 e 102.
+🔴 1. Teste de Cache Miss
 
-6.1 Primeira requisição (cache miss)
+Primeira chamada ao produto:
+
 curl http://localhost:8080/api/products/101
 
 
-Tempo estimado: ~2 segundos
+🕑 Resultado: ~2 segundos
+📢 Log esperado: "Produto não encontrado no cache. Buscando no BD... (CACHE MISS)"
 
-Log esperado:
+🟢 2. Teste de Cache Hit
 
-Produto não encontrado no cache. Buscando no BD... (CACHE MISS)
+Chamada repetida:
 
-6.2 Requisição subsequente (cache hit)
 curl http://localhost:8080/api/products/101
 
 
-Tempo estimado: milissegundos
+⚡ Resultado: instantâneo
+📢 Log esperado: "Produto encontrado no Memcached! (CACHE HIT)"
 
-Log esperado:
+📂 Arquivos Importantes
+🔧 MemcachedConfig.java
 
-Produto encontrado no Memcached! (CACHE HIT)
+Configura o cliente Memcached e o torna disponível como Bean do Spring.
 
-7. Estrutura do Projeto
-src/main/java/com/example/cache
- ├── config
- │    └── MemcachedConfig.java
- ├── controller
- │    └── ProductController.java
- ├── service
- │    └── ProductService.java
- └── model
-      └── Product.java
+💼 ProductService.java
 
-8. Arquivos Principais
-MemcachedConfig.java
+Contém:
 
-Configura o cliente do Memcached e define o bean utilizado pelo serviço.
+Busca no cache: memcachedClient.get(id)
 
-ProductService.java
+Latência simulada: Thread.sleep(2000)
 
-Implementa a lógica do padrão Cache-Aside, realiza consultas simuladas e gerencia o TTL (600s).
+Inserção no cache com TTL de 10min: memcachedClient.set(id, 600, product)
 
-ProductController.java
+🌐 ProductController.java
 
-Fornece o endpoint /api/products/{id} utilizado para testar o fluxo de cache.
+Endpoint REST principal:
 
-9. Dados Exemplo
-{
-  "id": 101,
-  "name": "Notebook Gamer",
-  "price": 4999.90
-}
+GET /api/products/{id}
 
-10. Créditos e Colaboração
+📌 Conclusão
 
-Projeto desenvolvido com colaboração de:
-
-Erivan Barros
-GitHub: Erivanb
-
-11. Conclusão
-
-Este projeto evidencia, de forma objetiva, como o uso de um cache distribuído:
-
-reduz a latência de consultas;
-
-diminui a carga sobre fontes de dados lentas;
-
-melhora o desempenho geral da aplicação;
-
-simplifica a escalabilidade horizontal.
-
-É uma implementação didática e sólida do padrão Cache-Aside aplicada ao ecossistema Java + Spring Boot.
+Este projeto mostra de forma clara como o Memcached melhora o desempenho e reduz carga na fonte de dados principal.
+É uma implementação simples, didática e ideal para estudos, prototipação e apresentações técnicas.
